@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradeCompass</title>
+<style>
+  :root {
+    --bg:#0f1117; --card:#171a23; --card-border:#262b3a;
+    --accent:#7c9cff; --accent-soft:rgba(124,156,255,0.15);
+    --text:#e8eaf0; --text-dim:#9aa0b4;
+    --danger:#ff6b6b; --danger-soft:rgba(255,107,107,0.14);
+    --warn:#ffd166; --warn-soft:rgba(255,209,102,0.14);
+    --good:#4ade80; --good-soft:rgba(74,222,128,0.14);
+    --study:#ffb84d; --study-soft:rgba(255,184,77,0.14);
+    --gold:#ffd76a;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); padding:16px; min-height:100vh; }
+  .wrap { max-width:640px; margin:0 auto; }
+  h1 { font-size:1.25rem; margin:4px 0 2px; }
+  .sub { color:var(--text-dim); font-size:0.8rem; margin-bottom:14px; }
+  h3 { font-size:0.82rem; margin:0 0 8px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.03em; }
+  .tabs { display:flex; gap:4px; background:var(--card); border:1px solid var(--card-border); border-radius:12px; padding:4px; margin-bottom:16px; overflow-x:auto; }
+  .tab { flex:0 0 auto; text-align:center; padding:9px 10px; border-radius:9px; font-size:0.68rem; font-weight:600; color:var(--text-dim); cursor:pointer; white-space:nowrap; }
+  .tab.active { background:var(--accent); color:#0f1117; }
+  .card { background:var(--card); border:1px solid var(--card-border); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .summary { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .summary-card { flex:1; min-width:88px; background:var(--card); border:1px solid var(--card-border); border-radius:12px; padding:10px; text-align:center; }
+  .summary-card .val { font-size:1.2rem; font-weight:700; }
+  .summary-card .val.target { color:var(--gold); }
+  .summary-card .val.achieved { color:var(--good); }
+  .summary-card .label { font-size:0.6rem; color:var(--text-dim); margin-top:2px; }
+  .progress-track { background:#1e2230; border-radius:8px; height:14px; overflow:hidden; margin:8px 0; }
+  .progress-fill { background:linear-gradient(90deg,var(--accent),var(--good)); height:100%; transition:width .3s; }
+  .progress-label { font-size:0.7rem; color:var(--text-dim); text-align:right; }
+  select, input, textarea { background:#1e2230; border:1px solid var(--card-border); color:var(--text); border-radius:8px; padding:7px 9px; font-size:0.85rem; font-family:inherit; }
+  select:focus, input:focus, textarea:focus { outline:1px solid var(--accent); }
+  label.field-label { display:block; font-size:0.66rem; color:var(--text-dim); margin-bottom:3px; }
+  .field-row { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .field-group { flex:1; min-width:100px; }
+  .field-group input, .field-group select { width:100%; }
+  .course-card { background:#1a1d29; border:1px solid var(--card-border); border-radius:12px; padding:12px; margin-bottom:10px; }
+  .course-top { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .course-top input[type="text"] { flex:1; font-weight:600; font-size:0.86rem; border:none; background:transparent; padding:4px 0; }
+  .course-units { width:50px; text-align:center; }
+  .risk-badge { font-size:0.63rem; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+  .risk-green { background:var(--good-soft); color:var(--good); }
+  .risk-yellow { background:var(--warn-soft); color:var(--warn); }
+  .risk-red { background:var(--danger-soft); color:var(--danger); }
+  .risk-none { background:#232838; color:var(--text-dim); }
+  .grade-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .grade-group { flex:1; }
+  .grade-group label { display:block; font-size:0.62rem; color:var(--text-dim); margin-bottom:3px; }
+  .grade-group select { width:100%; }
+  .icon-btn { background:transparent; border:none; color:var(--text-dim); cursor:pointer; font-size:1rem; padding:2px 6px; }
+  .icon-btn:hover { color:var(--danger); }
+  .weak-topics { border-top:1px solid var(--card-border); padding-top:8px; margin-top:4px; }
+  .weak-row { display:flex; gap:6px; align-items:center; margin-bottom:5px; }
+  .weak-row input[type="text"] { flex:1; font-size:0.78rem; padding:5px 7px; }
+  .weak-level-btn { font-size:0.6rem; padding:3px 7px; border-radius:6px; border:1px solid var(--card-border); cursor:pointer; background:#1e2230; color:var(--text-dim); }
+  .weak-level-btn.active.red { background:var(--danger-soft); color:var(--danger); border-color:var(--danger); }
+  .weak-level-btn.active.yellow { background:var(--warn-soft); color:var(--warn); border-color:var(--warn); }
+  .weak-level-btn.active.green { background:var(--good-soft); color:var(--good); border-color:var(--good); }
+  .add-weak-link { font-size:0.72rem; color:var(--accent); cursor:pointer; background:none; border:none; padding:4px 0; }
+  button.plain { background:var(--accent-soft); color:var(--accent); border:none; border-radius:10px; padding:10px; font-size:0.84rem; cursor:pointer; font-weight:600; width:100%; margin-top:4px; }
+  button.plain.gold { background:rgba(255,215,106,0.15); color:var(--gold); }
+  button.plain.danger { background:var(--danger-soft); color:var(--danger); }
+  .day-selector { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; }
+  .day-chip { flex:1; text-align:center; padding:8px 4px; border-radius:10px; background:var(--card); border:1px solid var(--card-border); font-size:0.7rem; font-weight:600; color:var(--text-dim); cursor:pointer; white-space:nowrap; }
+  .day-chip.active { background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+  .block { background:var(--card); border:1px solid var(--card-border); border-left:4px solid var(--accent); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .block.study { border-left-color:var(--study); }
+  .block-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+  .time-input { font-size:0.85rem; font-weight:600; width:90px; }
+  .name-input { flex:1; background:transparent; border:none; color:var(--text); font-size:0.9rem; font-weight:600; padding:6px 4px; min-width:100px; }
+  .block-course-select { flex:1; min-width:120px; }
+  .block-bottom { display:flex; justify-content:space-between; align-items:center; }
+  .type-toggle { display:flex; gap:4px; }
+  .type-btn { font-size:0.64rem; padding:3px 8px; border-radius:6px; background:#1e2230; color:var(--text-dim); border:1px solid var(--card-border); cursor:pointer; }
+  .type-btn.active.routine { background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+  .type-btn.active.study { background:var(--study-soft); color:var(--study); border-color:var(--study); }
+  .copy-row { display:flex; gap:8px; margin-top:12px; }
+  .copy-row button { flex:1; background:var(--card); border:1px solid var(--card-border); color:var(--text-dim); border-radius:10px; padding:9px; font-size:0.74rem; cursor:pointer; }
+  .session-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--card-border); font-size:0.8rem; }
+  .session-row:last-child { border-bottom:none; }
+  .bar-row { margin-bottom:8px; }
+  .bar-label { display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:3px; }
+  .bar-track { background:#1e2230; border-radius:6px; height:10px; overflow:hidden; }
+  .bar-fill { background:var(--study); height:100%; }
+  .assign-card { background:#1a1d29; border:1px solid var(--card-border); border-radius:12px; padding:12px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
+  .assign-top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .assign-top input[type="text"] { flex:1; font-size:0.85rem; font-weight:600; min-width:100px; }
+  .assign-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .assign-meta input[type="date"] { flex:1; min-width:120px; }
+  .done-btn { font-size:0.7rem; padding:5px 10px; border-radius:8px; border:1px solid var(--card-border); background:#1e2230; color:var(--text-dim); cursor:pointer; }
+  .done-btn.done { background:var(--good-soft); color:var(--good); border-color:var(--good); }
+  .affirmation-card { background:linear-gradient(135deg,var(--accent-soft),var(--good-soft)); border:1px solid var(--card-border); border-radius:16px; padding:24px 20px; text-align:center; margin-bottom:14px; }
+  .affirmation-text { font-size:1.05rem; font-weight:600; line-height:1.5; }
+  .affirmation-sub { font-size:0.7rem; color:var(--text-dim); margin-top:8px; }
+  .goal-text { width:100%; font-size:0.88rem; padding:8px; resize:vertical; min-height:50px; }
+  .tips-list { background:var(--card); border:1px solid var(--card-border); border-radius:12px; padding:14px 16px; font-size:0.82rem; line-height:1.7; color:var(--text-dim); }
+  .tips-list b { color:var(--text); }
+  .empty { text-align:center; color:var(--text-dim); padding:20px 10px; font-size:0.85rem; }
+  .status { text-align:center; font-size:0.7rem; color:var(--text-dim); margin-top:14px; min-height:14px; }
+  .note { background:var(--study-soft); border:1px solid rgba(255,184,77,0.3); color:#ffcf80; border-radius:10px; padding:10px 12px; font-size:0.74rem; margin-bottom:14px; }
+  .result-box { background:var(--accent-soft); border-radius:10px; padding:12px; text-align:center; margin-top:8px; }
+  .result-box .num { font-size:1.4rem; font-weight:700; color:var(--accent); }
+  .result-box .msg { font-size:0.78rem; color:var(--text-dim); margin-top:4px; }
+  .streak-flame { font-size:0.85rem; }
+  .greeting { font-size:1rem; font-weight:700; margin-bottom:2px; }
+  .today-header { font-size:0.78rem; color:var(--text-dim); margin-bottom:12px; }
+  .quick-log-btn { font-size:0.68rem; padding:5px 9px; border-radius:8px; background:var(--study-soft); color:var(--study); border:none; cursor:pointer; }
+  input[type="file"] { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GradeCompass</h1>
+  <div class="sub">Your target, your progress, your routine — all in one place.</div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-tab="today">Today</div>
+    <div class="tab" data-tab="dashboard">Dashboard</div>
+    <div class="tab" data-tab="goals">Courses</div>
+    <div class="tab" data-tab="tools">GPA Tools</div>
+    <div class="tab" data-tab="routine">Routine</div>
+    <div class="tab" data-tab="sessions">Study Log</div>
+    <div class="tab" data-tab="assignments">Deadlines</div>
+    <div class="tab" data-tab="boost">Daily Boost</div>
+    <div class="tab" data-tab="settings">Settings</div>
+  </div>
+
+  <!-- TODAY -->
+  <div id="todayView">
+    <div class="greeting" id="todayGreeting">Hi there</div>
+    <div class="today-header" id="todayDateLabel"></div>
+    <div class="card">
+      <h3>Today's study blocks</h3>
+      <div id="todayBlocks"></div>
+    </div>
+    <div class="card">
+      <h3>Due soon</h3>
+      <div id="todayDeadlines"></div>
+    </div>
+    <div class="card">
+      <h3>Recommended focus</h3>
+      <div id="todayFocus"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboardView" style="display:none;">
+    <div class="summary">
+      <div class="summary-card"><div class="val achieved" id="dashCgpa">--</div><div class="label">CGPA now</div></div>
+      <div class="summary-card"><div class="val target" id="dashTarget">--</div><div class="label">Target CGPA</div></div>
+      <div class="summary-card"><div class="val" id="dashSemGpa">--</div><div class="label">Semester GPA</div></div>
+    </div>
+    <div class="card">
+      <h3>Progress toward target</h3>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-label" id="progressLabel">Set your courses and target to see progress</div>
+    </div>
+    <div class="summary">
+      <div class="summary-card"><div class="val" id="dashUnitsDone">0</div><div class="label">Units graded</div></div>
+      <div class="summary-card"><div class="val" id="dashUnitsLeft">0</div><div class="label">Units remaining</div></div>
+      <div class="summary-card"><div class="val streak-flame" id="dashStreak">0🔥</div><div class="label">Study streak</div></div>
+    </div>
+    <div class="card"><h3>Grade distribution (this semester)</h3><div id="gradeDistribution"></div></div>
+    <div class="card"><h3>⚠️ Needs attention</h3><div id="riskList"></div></div>
+  </div>
+
+  <!-- GOALS / COURSES -->
+  <div id="goalsView" style="display:none;">
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">Grading scale</label>
+        <select id="scaleSelect">
+          <option value="5">5.0 (A=5,B=4,C=3,D=2,E=1,F=0)</option>
+          <option value="4">4.0 (A=4,B=3,C=2,D=1,F=0)</option>
+        </select>
+      </div>
+    </div>
+    <button class="plain gold" id="setAllTopBtn">🎯 Set all targets to top grade</button>
+    <div id="courseList" style="margin-top:10px;"></div>
+    <button class="plain" id="addCourseBtn">+ Add Course</button>
+  </div>
+
+  <!-- GPA TOOLS -->
+  <div id="toolsView" style="display:none;">
+    <div class="card">
+      <h3>Your academic record so far</h3>
+      <div class="field-row">
+        <div class="field-group"><label class="field-label">Previous CGPA</label><input type="number" step="0.01" id="prevCgpaInput"></div>
+        <div class="field-group"><label class="field-label">Previous units</label><input type="number" id="prevUnitsInput"></div>
+        <div class="field-group"><label class="field-label">Target CGPA</label><input type="number" step="0.01" id="targetCgpaInput"></div>
+      </div>
+    </div>
+    <div class="card"><h3>🧮 What GPA do I need this semester?</h3><div id="requiredGpaResult"></div></div>
+    <div class="card">
+      <h3>📈 GPA Simulator — try hypothetical grades</h3>
+      <div id="simulatorCourses"></div>
+      <div id="simulatorResult"></div>
+    </div>
+  </div>
+
+  <!-- ROUTINE -->
+  <div id="routineView" style="display:none;">
+    <div class="note">This page can't ring alarms in the background — set matching phone alarms for anything time-critical.</div>
+    <div class="day-selector" id="daySelector"></div>
+    <div id="weeklyBlocks"></div>
+    <button class="plain" id="addWeeklyBlock">+ Add Block to This Day</button>
+    <div class="copy-row">
+      <button id="copyToAll">Copy this day to all weekdays</button>
+      <button id="clearDay">Clear this day</button>
+    </div>
+    <button class="plain gold" id="exportCalendarBtn">📅 Export schedule as phone reminders (.ics)</button>
+    <div class="note" style="margin-top:8px;">Download this, then open it and choose your Calendar app (e.g. Google Calendar) — it creates a recurring weekly reminder for every block below, with an alert right when it's time.</div>
+  </div>
+
+  <!-- STUDY LOG -->
+  <div id="sessionsView" style="display:none;">
+    <div class="card">
+      <h3>Log a study session</h3>
+      <div class="field-row">
+        <div class="field-group" style="flex:2;"><label class="field-label">Course</label><select id="sessionCourse"></select></div>
+        <div class="field-group"><label class="field-label">Minutes</label><input type="number" id="sessionMinutes" placeholder="60"></div>
+      </div>
+      <div class="field-group" style="margin-bottom:10px;"><label class="field-label">Goal / note (optional)</label><input type="text" id="sessionNote" placeholder="e.g. 20 practice questions" style="width:100%;"></div>
+      <button class="plain gold" id="logSessionBtn">✅ Log Session</button>
+    </div>
+    <div class="card"><h3>This week — hours per course</h3><div id="weekHoursBars"></div></div>
+    <div class="card"><h3>Recent sessions</h3><div id="recentSessions"></div></div>
+  </div>
+
+  <!-- DEADLINES -->
+  <div id="assignmentsView" style="display:none;">
+    <div id="assignmentList"></div>
+    <button class="plain" id="addAssignmentBtn">+ Add Assignment / Test / Exam</button>
+  </div>
+
+  <!-- DAILY BOOST -->
+  <div id="boostView" style="display:none;">
+    <div class="card"><h3>My goal</h3><textarea class="goal-text" id="goalText" placeholder="What are you working toward this semester?"></textarea></div>
+    <div class="affirmation-card">
+      <div class="affirmation-text" id="affirmationText">Loading...</div>
+      <div class="affirmation-sub">Today's boost — comes back fresh tomorrow</div>
+    </div>
+    <button class="plain" id="nextAffirmation">Show another</button>
+    <div class="tips-list">
+      <b>What actually moves your CGPA up:</b><br>
+      • Show up to every class — attendance alone protects your grade<br>
+      • Review the day's topic within 24 hours, not the night before exams<br>
+      • Do practice questions, not just re-reading notes<br>
+      • Form or join a small study group for tough courses<br>
+      • Sleep and eat properly — tired reading doesn't stick<br>
+      • Track which courses need more hours and rebalance weekly
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settingsView" style="display:none;">
+    <div class="card">
+      <h3>Your profile</h3>
+      <div class="field-row">
+        <div class="field-group"><label class="field-label">Name</label><input type="text" id="profileName" placeholder="Your name"></div>
+        <div class="field-group"><label class="field-label">School</label><input type="text" id="profileSchool" placeholder="Your school"></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label class="field-label">Department</label><input type="text" id="profileDept" placeholder="e.g. Chemical Engineering"></div>
+        <div class="field-group"><label class="field-label">Level</label><input type="text" id="profileLevel" placeholder="e.g. 200"></div>
+        <div class="field-group"><label class="field-label">Semester</label><input type="text" id="profileSemester" placeholder="e.g. 1st Semester"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>☁️ Cloud Sync (optional)</h3>
+      <div id="cloudStatus" style="font-size:0.8rem; color:var(--text-dim); margin-bottom:10px;">Not connected — your data is only saved on this device.</div>
+      <details style="margin-bottom:10px;">
+        <summary style="font-size:0.78rem; color:var(--accent); cursor:pointer;">How do I set this up? (one-time, ~5 minutes)</summary>
+        <div style="font-size:0.76rem; color:var(--text-dim); line-height:1.6; margin-top:8px;">
+          1. Go to <b>console.firebase.google.com</b> and sign in with any Google account.<br>
+          2. Tap <b>Add project</b>, give it any name, finish the wizard.<br>
+          3. In the left menu tap <b>Build → Firestore Database</b> → <b>Create database</b> → choose <b>Start in test mode</b>.<br>
+          4. Tap the ⚙️ gear (top left) → <b>Project settings</b> → scroll to "Your apps" → tap the <b>&lt;/&gt;</b> (web) icon → register an app (any nickname).<br>
+          5. It shows a code block starting with <code>const firebaseConfig = {"{"}...{"}"}</code> — copy everything between the curly braces and paste it in the box below.<br>
+          6. Pick any <b>Sync Code</b> below (e.g. your name + a number) — use the exact same code on every device you want this data to appear on.
+        </div>
+      </details>
+      <div class="field-group" style="margin-bottom:10px;">
+        <label class="field-label">Firebase config (paste the {...} block here)</label>
+        <textarea id="firebaseConfigInput" class="goal-text" style="min-height:70px; font-family:monospace; font-size:0.72rem;" placeholder='apiKey: "...", authDomain: "...", projectId: "...", ...'></textarea>
+      </div>
+      <div class="field-group" style="margin-bottom:10px;">
+        <label class="field-label">Sync Code</label>
+        <input type="text" id="syncCodeInput" placeholder="e.g. timi-2026" style="width:100%;">
+      </div>
+      <button class="plain gold" id="connectCloudBtn">🔌 Connect & Sync</button>
+      <button class="plain danger" id="disconnectCloudBtn" style="display:none;">Disconnect this device</button>
+    </div>
+    <div class="card">
+      <h3>Data</h3>
+      <button class="plain" id="exportBtn">⬇️ Export my data</button>
+      <button class="plain" id="importBtn">⬆️ Import data</button>
+      <input type="file" id="importFile" accept="application/json">
+      <button class="plain danger" id="resetBtn">🗑️ Reset profile (start fresh)</button>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'gradecompass-state';
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const GRADES = {
+  '5': [['--',null],['A',5],['B',4],['C',3],['D',2],['E',1],['F',0]],
+  '4': [['--',null],['A',4],['B',3],['C',2],['D',1],['F',0]]
+};
+const AFFIRMATIONS = [
+  "I am capable of understanding anything I put consistent effort into.",
+  "Today's small study session is tomorrow's good result.",
+  "I don't have to be perfect today — I just have to show up and try.",
+  "Every course I struggle with now is a course I'll master with practice.",
+  "My target CGPA is realistic because I have a plan and I'm following it.",
+  "Discipline today means less panic before exams.",
+  "I am building the habits of the student I want to become.",
+  "One focused hour beats three distracted ones — I choose focus.",
+  "I trust the process I've set for myself this semester.",
+  "Rest is part of my study plan, not a break from it.",
+  "I am allowed to be proud of progress, not just perfection.",
+  "Hard courses don't mean I'm not smart — they mean I need more reps.",
+  "I show up for my future self by studying today.",
+  "Consistency, not intensity, is what will get me my target CGPA.",
+  "I am exactly where I need to be to keep improving."
+];
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+function todayStr() { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function dayOfYear() { const now = new Date(); const start = new Date(now.getFullYear(),0,0); return Math.floor((now-start)/86400000); }
+function daysBetween(a,b) { return Math.round((new Date(b)-new Date(a))/86400000); }
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function defaultWeeklyDay(dayIndex) {
+  const isWeekday = dayIndex >= 1 && dayIndex <= 5;
+  if (isWeekday) {
+    return [
+      { id:uid(), time:'06:00', name:'Wake up', type:'routine', courseId:null },
+      { id:uid(), time:'08:00', name:'Class', type:'routine', courseId:null },
+      { id:uid(), time:'13:00', name:'Lunch / Break', type:'routine', courseId:null },
+      { id:uid(), time:'16:00', name:'', type:'study', courseId:null },
+      { id:uid(), time:'19:00', name:'', type:'study', courseId:null },
+      { id:uid(), time:'22:00', name:'Sleep', type:'routine', courseId:null }
+    ];
+  }
+  return [
+    { id:uid(), time:'08:00', name:'Wake up', type:'routine', courseId:null },
+    { id:uid(), time:'11:00', name:'', type:'study', courseId:null },
+    { id:uid(), time:'19:00', name:'', type:'study', courseId:null },
+    { id:uid(), time:'22:30', name:'Sleep', type:'routine', courseId:null }
+  ];
+}
+
+function defaultState() {
+  const weekly = {};
+  DAYS.forEach((d,i) => { weekly[d] = defaultWeeklyDay(i); });
+  return {
+    profile: { name:'', school:'', department:'', level:'', semester:'' },
+    scale: '5', courses: [], weekly,
+    selectedDay: 'Mon', activeTab: 'today',
+    affirmationIndex: dayOfYear() % AFFIRMATIONS.length,
+    prevCgpa:'', prevUnits:'', targetCgpa:'',
+    simGrades: {}, sessions: [], assignments: [],
+    streak: { lastDate:null, count:0 }, goalText:''
+  };
+}
+
+let state = defaultState();
+let saveTimer = null;
+
+function gradePoint(letter) { const f = GRADES[state.scale].find(g => g[0]===letter); return f ? f[1] : null; }
+
+function courseCGPA(field) {
+  let pts=0, units=0, gradedUnits=0;
+  state.courses.forEach(c => {
+    const u = parseFloat(c.units);
+    if (!isNaN(u) && u > 0) {
+      units += u;
+      const p = gradePoint(c[field]);
+      if (p !== null) { pts += u*p; gradedUnits += u; }
+    }
+  });
+  return { gpa: gradedUnits>0 ? pts/gradedUnits : null, units, gradedUnits, pts };
+}
+
+function overallCGPA(field) {
+  const sem = courseCGPA(field);
+  const prevCgpa = parseFloat(state.prevCgpa);
+  const prevUnits = parseFloat(state.prevUnits);
+  const hasPrev = !isNaN(prevCgpa) && !isNaN(prevUnits) && prevUnits > 0;
+  const prevPts = hasPrev ? prevCgpa*prevUnits : 0;
+  const totalUnits = (hasPrev?prevUnits:0) + sem.gradedUnits;
+  const totalPts = prevPts + sem.pts;
+  return totalUnits > 0 ? totalPts/totalUnits : (hasPrev ? prevCgpa : null);
+}
+
+function riskLevel(course) {
+  if (course.achieved === '--') return 'none';
+  const t = gradePoint(course.target), a = gradePoint(course.achieved);
+  if (t === null || a === null) return 'none';
+  const diff = a - t;
+  if (diff >= 0) return 'green';
+  if (diff === -1) return 'yellow';
+  return 'red';
+}
+
+function courseName(id) { const c = state.courses.find(x => x.id === id); return c ? c.name : null; }
+
+function switchTab(tab) { state.activeTab = tab; render(); scheduleSave(); }
+
+function render() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.activeTab));
+  ['today','dashboard','goals','tools','routine','sessions','assignments','boost','settings'].forEach(t => {
+    document.getElementById(t+'View').style.display = (state.activeTab===t) ? 'block' : 'none';
+  });
+  renderToday();
+  renderDashboard();
+  renderGoals();
+  renderTools();
+  renderDaySelector();
+  renderWeeklyBlocks();
+  renderSessions();
+  renderAssignments();
+  renderBoost();
+  renderSettings();
+}
+
+/* ---------- TODAY ---------- */
+function renderToday() {
+  const name = state.profile.name ? state.profile.name.split(' ')[0] : '';
+  document.getElementById('todayGreeting').textContent = name ? ('Hi ' + name) : 'Welcome back';
+  const now = new Date();
+  document.getElementById('todayDateLabel').textContent = now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+
+  const todayCode = DAYS[now.getDay()];
+  const blocks = (state.weekly[todayCode]||[]).filter(b => b.type==='study').slice().sort((a,b)=>a.time.localeCompare(b.time));
+  const blocksEl = document.getElementById('todayBlocks');
+  blocksEl.innerHTML = blocks.length ? blocks.map(b => {
+    const label = b.courseId ? (courseName(b.courseId) || 'Untitled course') : (b.name || 'Study block');
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:0.85rem;">
+      <span>${b.time} — ${escapeHtml(label)}</span>
+      <button class="quick-log-btn" data-quicklog="${escapeHtml(label)}">Log it</button>
+    </div>`;
+  }).join('') : '<div class="empty">No study blocks scheduled today. Add some in Routine.</div>';
+
+  document.querySelectorAll('[data-quicklog]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.activeTab = 'sessions';
+      render();
+      const sel = document.getElementById('sessionCourse');
+      const label = btn.dataset.quicklog;
+      const match = Array.from(sel.options).find(o => o.value === label);
+      if (match) sel.value = label;
+      scheduleSave();
+    });
+  });
+
+  const upcoming = state.assignments.filter(a => !a.done).slice().sort((a,b)=>new Date(a.due)-new Date(b.due)).slice(0,4);
+  const deadlinesEl = document.getElementById('todayDeadlines');
+  deadlinesEl.innerHTML = upcoming.length ? upcoming.map(a => {
+    const diff = daysBetween(todayStr(), a.due);
+    const label = diff < 0 ? 'Overdue' : diff === 0 ? 'Due today' : diff+'d left';
+    const cls = diff <= 2 ? 'risk-red' : diff <= 5 ? 'risk-yellow' : 'risk-green';
+    return `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:0.82rem;"><span>${escapeHtml(a.course)} — ${escapeHtml(a.task||'Untitled')}</span><span class="risk-badge ${cls}">${label}</span></div>`;
+  }).join('') : '<div class="empty">Nothing due soon.</div>';
+
+  document.getElementById('todayFocus').innerHTML = buildRecommendedFocusHtml();
+}
+
+function buildRecommendedFocusHtml() {
+  let recommend = null;
+  for (const c of state.courses) {
+    const red = (c.weakTopics||[]).find(w => w.level==='red');
+    if (red) { recommend = { course:c.name, topic:red.name }; break; }
+  }
+  if (!recommend) {
+    for (const c of state.courses) {
+      const y = (c.weakTopics||[]).find(w => w.level==='yellow');
+      if (y) { recommend = { course:c.name, topic:y.name }; break; }
+    }
+  }
+  return recommend
+    ? `<div style="font-size:0.88rem;">Focus on <b>${escapeHtml(recommend.topic||'this topic')}</b> (${escapeHtml(recommend.course)}) for about 45 minutes.</div>`
+    : '<div class="empty">No weak topics flagged — keep going!</div>';
+}
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard() {
+  const achievedOverall = overallCGPA('achieved');
+  const targetOverall = overallCGPA('target');
+  const sem = courseCGPA('achieved');
+  document.getElementById('dashCgpa').textContent = achievedOverall!==null ? achievedOverall.toFixed(2) : (state.prevCgpa || '--');
+  document.getElementById('dashTarget').textContent = state.targetCgpa ? parseFloat(state.targetCgpa).toFixed(2) : (targetOverall!==null ? targetOverall.toFixed(2) : '--');
+  document.getElementById('dashSemGpa').textContent = sem.gpa!==null ? sem.gpa.toFixed(2) : '--';
+
+  const targetVal = state.targetCgpa ? parseFloat(state.targetCgpa) : targetOverall;
+  let pct = 0, hasProgress = false;
+  if (achievedOverall !== null && targetVal) { pct = Math.min(100, Math.max(0,(achievedOverall/targetVal)*100)); hasProgress = true; }
+  else if (state.prevCgpa && targetVal) { pct = Math.min(100, Math.max(0,(parseFloat(state.prevCgpa)/targetVal)*100)); hasProgress = true; }
+  document.getElementById('progressFill').style.width = pct.toFixed(0)+'%';
+  document.getElementById('progressLabel').textContent = hasProgress ? (pct.toFixed(0)+'% of the way to your target') : 'Add courses and a target CGPA in GPA Tools to see progress';
+
+  const totalUnits = courseCGPA('target').units;
+  document.getElementById('dashUnitsDone').textContent = sem.gradedUnits;
+  document.getElementById('dashUnitsLeft').textContent = Math.max(0, totalUnits - sem.gradedUnits);
+  document.getElementById('dashStreak').textContent = state.streak.count + '🔥';
+
+  const dist = {};
+  state.courses.forEach(c => { if (c.achieved !== '--') dist[c.achieved] = (dist[c.achieved]||0)+1; });
+  const distEl = document.getElementById('gradeDistribution');
+  const keys = Object.keys(dist);
+  distEl.innerHTML = keys.length ? keys.map(k => `<span style="margin-right:14px;font-size:0.85rem;"><b>${k}</b>: ${dist[k]}</span>`).join('') : '<div class="empty">No grades recorded yet.</div>';
+
+  const riskEl = document.getElementById('riskList');
+  const atRisk = state.courses.filter(c => { const r = riskLevel(c); return r==='red' || r==='yellow'; });
+  riskEl.innerHTML = atRisk.length ? atRisk.map(c => {
+    const r = riskLevel(c);
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.82rem;"><span>${escapeHtml(c.name)}</span><span class="risk-badge risk-${r}">${r==='red' ? '🔴 Urgent' : '🟡 Watch'}</span></div>`;
+  }).join('') : (state.courses.length ? '<div class="empty">Nothing flagged — you are on track!</div>' : '<div class="empty">Add courses in the Courses tab first.</div>');
+}
+
+/* ---------- GOALS / COURSES ---------- */
+function renderGoals() {
+  document.getElementById('scaleSelect').value = state.scale;
+  const list = document.getElementById('courseList');
+  list.innerHTML = '';
+  if (state.courses.length === 0) { list.innerHTML = '<div class="empty">No courses yet. Add your first one below.</div>'; return; }
+  state.courses.forEach(course => {
+    if (!course.weakTopics) course.weakTopics = [];
+    const card = document.createElement('div');
+    card.className = 'course-card';
+
+    const top = document.createElement('div'); top.className = 'course-top';
+    const nameIn = document.createElement('input');
+    nameIn.type = 'text'; nameIn.value = course.name; nameIn.placeholder = 'Course name (e.g. MTH 201 – Calculus)';
+    nameIn.addEventListener('input', e => { course.name = e.target.value; scheduleSave(); });
+    const unitsIn = document.createElement('input');
+    unitsIn.type = 'number'; unitsIn.className = 'course-units'; unitsIn.min = '0'; unitsIn.value = course.units;
+    unitsIn.addEventListener('input', e => { course.units = e.target.value; render(); scheduleSave(); });
+    const risk = document.createElement('span');
+    const r = riskLevel(course);
+    risk.className = 'risk-badge risk-' + r;
+    risk.textContent = r==='green' ? '🟢' : r==='yellow' ? '🟡' : r==='red' ? '🔴' : '—';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'icon-btn'; delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => { state.courses = state.courses.filter(c => c.id !== course.id); render(); scheduleSave(); });
+    top.appendChild(nameIn); top.appendChild(unitsIn); top.appendChild(risk); top.appendChild(delBtn);
+
+    const gradeRow = document.createElement('div'); gradeRow.className = 'grade-row';
+    gradeRow.appendChild(makeGradeGroup('Target grade', course, 'target'));
+    gradeRow.appendChild(makeGradeGroup('Achieved grade', course, 'achieved'));
+
+    const weakWrap = document.createElement('div'); weakWrap.className = 'weak-topics';
+    const weakTitle = document.createElement('div');
+    weakTitle.style.cssText = 'font-size:0.66rem;color:var(--text-dim);margin-bottom:6px;';
+    weakTitle.textContent = 'Weak topics';
+    weakWrap.appendChild(weakTitle);
+    course.weakTopics.forEach(topic => {
+      const row = document.createElement('div'); row.className = 'weak-row';
+      const nameIn2 = document.createElement('input');
+      nameIn2.type = 'text'; nameIn2.value = topic.name; nameIn2.placeholder = 'Topic';
+      nameIn2.addEventListener('input', e => { topic.name = e.target.value; scheduleSave(); });
+      row.appendChild(nameIn2);
+      ['red','yellow','green'].forEach(lvl => {
+        const b = document.createElement('button');
+        b.className = 'weak-level-btn' + (topic.level===lvl ? ' active '+lvl : '');
+        b.textContent = lvl==='red' ? '🔴' : lvl==='yellow' ? '🟡' : '🟢';
+        b.addEventListener('click', () => { topic.level = lvl; render(); scheduleSave(); });
+        row.appendChild(b);
+      });
+      const delT = document.createElement('button');
+      delT.className = 'icon-btn'; delT.textContent = '✕';
+      delT.addEventListener('click', () => { course.weakTopics = course.weakTopics.filter(w => w.id !== topic.id); render(); scheduleSave(); });
+      row.appendChild(delT);
+      weakWrap.appendChild(row);
+    });
+    const addWeak = document.createElement('button');
+    addWeak.className = 'add-weak-link'; addWeak.textContent = '+ add weak topic';
+    addWeak.addEventListener('click', () => { course.weakTopics.push({ id:uid(), name:'', level:'yellow' }); render(); scheduleSave(); });
+    weakWrap.appendChild(addWeak);
+
+    card.appendChild(top); card.appendChild(gradeRow); card.appendChild(weakWrap);
+    list.appendChild(card);
+  });
+}
+
+function makeGradeGroup(label, course, field) {
+  const group = document.createElement('div'); group.className = 'grade-group';
+  const l = document.createElement('label'); l.textContent = label;
+  const sel = document.createElement('select');
+  GRADES[state.scale].forEach(([letter]) => {
+    const opt = document.createElement('option'); opt.value = letter; opt.textContent = letter;
+    if (letter === course[field]) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', e => { course[field] = e.target.value; render(); scheduleSave(); });
+  group.appendChild(l); group.appendChild(sel);
+  return group;
+}
+
+/* ---------- GPA TOOLS ---------- */
+function renderTools() {
+  document.getElementById('prevCgpaInput').value = state.prevCgpa;
+  document.getElementById('prevUnitsInput').value = state.prevUnits;
+  document.getElementById('targetCgpaInput').value = state.targetCgpa;
+
+  const semUnits = courseCGPA('target').units;
+  const prevCgpa = parseFloat(state.prevCgpa);
+  const prevUnits = parseFloat(state.prevUnits);
+  const desired = parseFloat(state.targetCgpa);
+  const reqEl = document.getElementById('requiredGpaResult');
+  if (!isNaN(prevCgpa) && !isNaN(prevUnits) && prevUnits > 0 && !isNaN(desired) && semUnits > 0) {
+    const required = (desired*(prevUnits+semUnits) - prevCgpa*prevUnits) / semUnits;
+    const maxPossible = state.scale === '5' ? 5 : 4;
+    let msg;
+    if (required <= 0) msg = "You've already secured this — any passing grades keep you on target.";
+    else if (required > maxPossible) msg = `Not mathematically possible this semester alone (max is ${maxPossible.toFixed(2)}) — you'll need more than one semester to close the gap.`;
+    else msg = `That's the semester GPA you need to hit your ${desired.toFixed(2)} target.`;
+    reqEl.innerHTML = `<div class="result-box"><div class="num">${Math.max(0,required).toFixed(2)}</div><div class="msg">${msg}</div></div>`;
+  } else if (semUnits === 0) {
+    reqEl.innerHTML = '<div class="empty">Add your courses (with units) in the Courses tab first.</div>';
+  } else {
+    reqEl.innerHTML = '<div class="empty">Fill in your previous CGPA, previous units, and target CGPA above.</div>';
+  }
+
+  const simEl = document.getElementById('simulatorCourses');
+  simEl.innerHTML = '';
+  if (state.courses.length === 0) {
+    simEl.innerHTML = '<div class="empty">Add courses first to use the simulator.</div>';
+  } else {
+    state.courses.forEach(c => {
+      if (!(c.id in state.simGrades)) state.simGrades[c.id] = (c.target && c.target !== '--') ? c.target : 'A';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;gap:8px;';
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size:0.82rem;flex:1;';
+      label.textContent = c.name || 'Untitled course';
+      const sel = document.createElement('select');
+      GRADES[state.scale].filter(g => g[0] !== '--').forEach(([letter]) => {
+        const opt = document.createElement('option'); opt.value = letter; opt.textContent = letter;
+        if (letter === state.simGrades[c.id]) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', e => { state.simGrades[c.id] = e.target.value; renderTools(); scheduleSave(); });
+      row.appendChild(label); row.appendChild(sel);
+      simEl.appendChild(row);
+    });
+  }
+
+  let simPts = 0, simUnits = 0;
+  state.courses.forEach(c => {
+    const u = parseFloat(c.units);
+    if (!isNaN(u) && u > 0) {
+      simUnits += u;
+      const p = gradePoint(state.simGrades[c.id]);
+      if (p !== null) simPts += u*p;
+    }
+  });
+  const simSemGpa = simUnits > 0 ? simPts/simUnits : null;
+  let simOverall = null;
+  if (!isNaN(prevCgpa) && !isNaN(prevUnits) && prevUnits > 0 && simSemGpa !== null) {
+    simOverall = (prevCgpa*prevUnits + simPts) / (prevUnits+simUnits);
+  } else if (simSemGpa !== null) { simOverall = simSemGpa; }
+  document.getElementById('simulatorResult').innerHTML = `<div class="summary" style="margin-top:8px;">
+    <div class="summary-card"><div class="val">${simSemGpa!==null ? simSemGpa.toFixed(2) : '--'}</div><div class="label">Projected Semester GPA</div></div>
+    <div class="summary-card"><div class="val target">${simOverall!==null ? simOverall.toFixed(2) : '--'}</div><div class="label">Projected CGPA</div></div>
+  </div>`;
+}
+
+/* ---------- ROUTINE ---------- */
+function renderDaySelector() {
+  const sel = document.getElementById('daySelector'); sel.innerHTML = '';
+  DAYS.forEach(d => {
+    const chip = document.createElement('div');
+    chip.className = 'day-chip' + (d===state.selectedDay ? ' active' : '');
+    chip.textContent = d;
+    chip.addEventListener('click', () => { state.selectedDay = d; render(); });
+    sel.appendChild(chip);
+  });
+}
+function sortBlocks(b) { b.sort((a,b2)=>a.time.localeCompare(b2.time)); }
+function renderWeeklyBlocks() {
+  const container = document.getElementById('weeklyBlocks'); container.innerHTML = '';
+  const list = state.weekly[state.selectedDay];
+  if (!list || list.length === 0) { container.innerHTML = '<div class="empty">No blocks for '+state.selectedDay+' yet.</div>'; return; }
+  sortBlocks(list);
+  list.forEach(block => {
+    if (block.courseId === undefined) block.courseId = null;
+    const el = document.createElement('div');
+    el.className = 'block' + (block.type==='study' ? ' study' : '');
+    const top = document.createElement('div'); top.className = 'block-top';
+    const timeIn = document.createElement('input'); timeIn.type='time'; timeIn.className='time-input'; timeIn.value=block.time;
+    timeIn.addEventListener('change', e => { block.time = e.target.value; render(); scheduleSave(); });
+    top.appendChild(timeIn);
+
+    if (block.type === 'study') {
+      const courseSel = document.createElement('select');
+      courseSel.className = 'block-course-select';
+      const noneOpt = document.createElement('option'); noneOpt.value=''; noneOpt.textContent = state.courses.length ? 'Choose a course...' : 'No courses yet';
+      courseSel.appendChild(noneOpt);
+      state.courses.forEach(c => {
+        const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.name || 'Untitled course';
+        if (block.courseId === c.id) opt.selected = true;
+        courseSel.appendChild(opt);
+      });
+      courseSel.addEventListener('change', e => { block.courseId = e.target.value || null; scheduleSave(); });
+      top.appendChild(courseSel);
+    } else {
+      const nameIn = document.createElement('input');
+      nameIn.type='text'; nameIn.className='name-input'; nameIn.placeholder='Activity'; nameIn.value=block.name;
+      nameIn.addEventListener('input', e => { block.name = e.target.value; scheduleSave(); });
+      top.appendChild(nameIn);
+    }
+
+    const delBtn = document.createElement('button'); delBtn.className='icon-btn'; delBtn.textContent='✕';
+    delBtn.addEventListener('click', () => { const idx=list.findIndex(b=>b.id===block.id); if (idx>-1) list.splice(idx,1); render(); scheduleSave(); });
+    top.appendChild(delBtn);
+
+    const bottom = document.createElement('div'); bottom.className='block-bottom';
+    const toggle = document.createElement('div'); toggle.className='type-toggle';
+    const routineBtn = document.createElement('button'); routineBtn.className='type-btn routine'+(block.type==='routine'?' active':''); routineBtn.textContent='Routine';
+    routineBtn.addEventListener('click', () => { block.type='routine'; render(); scheduleSave(); });
+    const studyBtn = document.createElement('button'); studyBtn.className='type-btn study'+(block.type==='study'?' active':''); studyBtn.textContent='Study';
+    studyBtn.addEventListener('click', () => { block.type='study'; render(); scheduleSave(); });
+    toggle.appendChild(routineBtn); toggle.appendChild(studyBtn); bottom.appendChild(toggle);
+    el.appendChild(top); el.appendChild(bottom); container.appendChild(el);
+  });
+}
+
+/* ---------- STUDY LOG ---------- */
+function renderSessions() {
+  const sel = document.getElementById('sessionCourse');
+  const prevVal = sel.value;
+  sel.innerHTML = '';
+  if (state.courses.length === 0) {
+    const opt = document.createElement('option'); opt.value=''; opt.textContent='Add a course first';
+    sel.appendChild(opt);
+  } else {
+    state.courses.forEach(c => { const opt=document.createElement('option'); opt.value=c.name; opt.textContent=c.name||'Untitled course'; sel.appendChild(opt); });
+    if (prevVal) sel.value = prevVal;
+  }
+
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7*86400000);
+  const hoursByCourse = {};
+  state.sessions.forEach(s => { if (new Date(s.date) >= weekAgo) hoursByCourse[s.course] = (hoursByCourse[s.course]||0) + s.minutes; });
+  const maxMin = Math.max(1, ...Object.values(hoursByCourse));
+  const barsEl = document.getElementById('weekHoursBars');
+  const keys = Object.keys(hoursByCourse);
+  barsEl.innerHTML = keys.length ? keys.map(k => {
+    const mins = hoursByCourse[k]; const h=Math.floor(mins/60), m=mins%60; const pct=(mins/maxMin)*100;
+    return `<div class="bar-row"><div class="bar-label"><span>${escapeHtml(k)}</span><span>${h}h ${m}m</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
+  }).join('') : '<div class="empty">No sessions logged this week yet.</div>';
+
+  const recentEl = document.getElementById('recentSessions');
+  const recent = state.sessions.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+  recentEl.innerHTML = recent.length ? recent.map(s => {
+    const h=Math.floor(s.minutes/60), m=s.minutes%60;
+    return `<div class="session-row"><span>${escapeHtml(s.course)}${s.note ? ' — '+escapeHtml(s.note) : ''}</span><span>${h}h ${m}m</span></div>`;
+  }).join('') : '<div class="empty">No sessions logged yet.</div>';
+}
+
+/* ---------- ASSIGNMENTS ---------- */
+function renderAssignments() {
+  const list = document.getElementById('assignmentList');
+  list.innerHTML = '';
+  if (state.assignments.length === 0) { list.innerHTML = '<div class="empty">No assignments, tests or exams added yet.</div>'; return; }
+  const sorted = state.assignments.slice().sort((a,b)=>new Date(a.due)-new Date(b.due));
+  sorted.forEach(a => {
+    const card = document.createElement('div'); card.className='assign-card';
+    const top = document.createElement('div'); top.className='assign-top';
+    const courseSel = document.createElement('select');
+    if (state.courses.length === 0) { const opt=document.createElement('option'); opt.value=''; opt.textContent='No courses yet'; courseSel.appendChild(opt); }
+    state.courses.forEach(c => { const opt=document.createElement('option'); opt.value=c.name; opt.textContent=c.name||'Untitled course'; if (c.name===a.course) opt.selected=true; courseSel.appendChild(opt); });
+    courseSel.addEventListener('change', e => { a.course = e.target.value; scheduleSave(); });
+    const taskIn = document.createElement('input'); taskIn.type='text'; taskIn.value=a.task; taskIn.placeholder='Task (e.g. Assignment 1, Mid-sem test)';
+    taskIn.addEventListener('input', e => { a.task = e.target.value; scheduleSave(); });
+    const delBtn = document.createElement('button'); delBtn.className='icon-btn'; delBtn.textContent='✕';
+    delBtn.addEventListener('click', () => { state.assignments = state.assignments.filter(x=>x.id!==a.id); render(); scheduleSave(); });
+    top.appendChild(courseSel); top.appendChild(taskIn); top.appendChild(delBtn);
+
+    const meta = document.createElement('div'); meta.className='assign-meta';
+    const dueIn = document.createElement('input'); dueIn.type='date'; dueIn.value=a.due;
+    dueIn.addEventListener('change', e => { a.due = e.target.value; render(); scheduleSave(); });
+    const statusBadge = document.createElement('span');
+    let statusLabel, statusClass;
+    if (a.done) { statusLabel='✅ Done'; statusClass='risk-green'; }
+    else {
+      const diff = daysBetween(todayStr(), a.due);
+      if (diff < 0) { statusLabel='🔴 Overdue'; statusClass='risk-red'; }
+      else if (diff <= 2) { statusLabel='🔴 '+diff+'d left'; statusClass='risk-red'; }
+      else if (diff <= 5) { statusLabel='🟡 '+diff+'d left'; statusClass='risk-yellow'; }
+      else { statusLabel='🟢 '+diff+'d left'; statusClass='risk-green'; }
+    }
+    statusBadge.className = 'risk-badge ' + statusClass; statusBadge.textContent = statusLabel;
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'done-btn' + (a.done ? ' done' : '');
+    doneBtn.textContent = a.done ? 'Done ✓' : 'Mark done';
+    doneBtn.addEventListener('click', () => { a.done = !a.done; render(); scheduleSave(); });
+    meta.appendChild(dueIn); meta.appendChild(statusBadge); meta.appendChild(doneBtn);
+
+    card.appendChild(top); card.appendChild(meta); list.appendChild(card);
+  });
+}
+
+/* ---------- BOOST ---------- */
+function renderBoost() {
+  document.getElementById('affirmationText').textContent = AFFIRMATIONS[state.affirmationIndex];
+  document.getElementById('goalText').value = state.goalText || '';
+}
+
+/* ---------- SETTINGS ---------- */
+function renderSettings() {
+  document.getElementById('profileName').value = state.profile.name || '';
+  document.getElementById('profileSchool').value = state.profile.school || '';
+  document.getElementById('profileDept').value = state.profile.department || '';
+  document.getElementById('profileLevel').value = state.profile.level || '';
+  document.getElementById('profileSemester').value = state.profile.semester || '';
+}
+
+/* ---------- WIRE UP EVENTS (once) ---------- */
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
+document.getElementById('addCourseBtn').addEventListener('click', () => {
+  state.courses.push({ id:uid(), name:'', units:3, target:'A', achieved:'--', weakTopics:[] });
+  render(); scheduleSave();
+  const inputs = document.querySelectorAll('.course-card input[type="text"]');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+});
+document.getElementById('setAllTopBtn').addEventListener('click', () => {
+  const top = GRADES[state.scale][1][0];
+  state.courses.forEach(c => { c.target = top; });
+  render(); scheduleSave();
+});
+document.getElementById('scaleSelect').addEventListener('change', e => { state.scale = e.target.value; render(); scheduleSave(); });
+
+document.getElementById('prevCgpaInput').addEventListener('input', e => { state.prevCgpa = e.target.value; render(); scheduleSave(); });
+document.getElementById('prevUnitsInput').addEventListener('input', e => { state.prevUnits = e.target.value; render(); scheduleSave(); });
+document.getElementById('targetCgpaInput').addEventListener('input', e => { state.targetCgpa = e.target.value; render(); scheduleSave(); });
+
+document.getElementById('addWeeklyBlock').addEventListener('click', () => {
+  state.weekly[state.selectedDay].push({ id:uid(), time:'12:00', name:'', type:'study', courseId:null });
+  render(); scheduleSave();
+});
+document.getElementById('copyToAll').addEventListener('click', () => {
+  const source = state.weekly[state.selectedDay];
+  ['Mon','Tue','Wed','Thu','Fri'].forEach(d => { if (d !== state.selectedDay) state.weekly[d] = source.map(b => ({ ...b, id: uid() })); });
+  render(); scheduleSave();
+});
+document.getElementById('clearDay').addEventListener('click', () => { state.weekly[state.selectedDay] = []; render(); scheduleSave(); });
+document.getElementById('exportCalendarBtn').addEventListener('click', exportScheduleAsICS);
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function icsEscape(s) { return String(s || '').replace(/([,;])/g, '\\$1'); }
+
+function nextDateForWeekday(targetDayIndex, hour, minute) {
+  const now = new Date();
+  const result = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0);
+  let diff = (targetDayIndex - now.getDay() + 7) % 7;
+  if (diff === 0 && result <= now) diff = 7;
+  result.setDate(result.getDate() + diff);
+  return result;
+}
+function formatICSDate(d) {
+  return d.getFullYear() + pad2(d.getMonth()+1) + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + pad2(d.getMinutes()) + '00';
+}
+const ICS_DAY_CODES = ['SU','MO','TU','WE','TH','FR','SA'];
+
+function exportScheduleAsICS() {
+  const lines = [];
+  lines.push('BEGIN:VCALENDAR');
+  lines.push('VERSION:2.0');
+  lines.push('PRODID:-//GradeCompass//Study Schedule//EN');
+  lines.push('CALSCALE:GREGORIAN');
+
+  let count = 0;
+  DAYS.forEach((dayCode, dayIndex) => {
+    const blocks = state.weekly[dayCode] || [];
+    blocks.forEach(block => {
+      const [hh, mm] = (block.time || '08:00').split(':').map(n => parseInt(n, 10));
+      const label = block.type === 'study'
+        ? (block.courseId ? (courseName(block.courseId) || 'Study block') : (block.name || 'Study block'))
+        : (block.name || 'Reminder');
+      if (!label) return;
+      const start = nextDateForWeekday(dayIndex, hh || 0, mm || 0);
+      const dtstart = formatICSDate(start);
+      const uidStr = block.id + '@gradecompass';
+      lines.push('BEGIN:VEVENT');
+      lines.push('UID:' + uidStr);
+      lines.push('DTSTAMP:' + formatICSDate(new Date()) + 'Z');
+      lines.push('DTSTART:' + dtstart);
+      lines.push('DURATION:PT30M');
+      lines.push('RRULE:FREQ=WEEKLY;BYDAY=' + ICS_DAY_CODES[dayIndex]);
+      lines.push('SUMMARY:' + icsEscape((block.type === 'study' ? 'Study: ' : '') + label));
+      lines.push('BEGIN:VALARM');
+      lines.push('ACTION:DISPLAY');
+      lines.push('DESCRIPTION:' + icsEscape(label));
+      lines.push('TRIGGER:-PT0M');
+      lines.push('END:VALARM');
+      lines.push('END:VEVENT');
+      count++;
+    });
+  });
+  lines.push('END:VCALENDAR');
+
+  if (count === 0) { setStatus('Add some routine or study blocks first'); setTimeout(()=>setStatus(''),1800); return; }
+
+  const icsContent = lines.join('\r\n');
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'gradecompass-schedule.ics';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  setStatus('Calendar file downloaded — open it to add reminders'); setTimeout(()=>setStatus(''),2500);
+}
+
+document.getElementById('logSessionBtn').addEventListener('click', () => {
+  const course = document.getElementById('sessionCourse').value;
+  const minutes = parseInt(document.getElementById('sessionMinutes').value, 10);
+  const note = document.getElementById('sessionNote').value;
+  if (!course || isNaN(minutes) || minutes <= 0) { setStatus('Enter a valid duration first'); setTimeout(()=>setStatus(''),1500); return; }
+  const today = todayStr();
+  state.sessions.push({ id:uid(), course, minutes, note, date:today });
+  if (state.streak.lastDate === today) { /* already counted today */ }
+  else if (state.streak.lastDate && daysBetween(state.streak.lastDate, today) === 1) { state.streak.count += 1; state.streak.lastDate = today; }
+  else { state.streak.count = 1; state.streak.lastDate = today; }
+  document.getElementById('sessionMinutes').value = '';
+  document.getElementById('sessionNote').value = '';
+  render(); scheduleSave();
+});
+
+document.getElementById('addAssignmentBtn').addEventListener('click', () => {
+  state.assignments.push({ id:uid(), course: state.courses[0] ? state.courses[0].name : '', task:'', due: todayStr(), done:false });
+  render(); scheduleSave();
+});
+
+document.getElementById('goalText').addEventListener('input', e => { state.goalText = e.target.value; scheduleSave(); });
+document.getElementById('nextAffirmation').addEventListener('click', () => { state.affirmationIndex = (state.affirmationIndex+1) % AFFIRMATIONS.length; render(); scheduleSave(); });
+
+['profileName','profileSchool','profileDept','profileLevel','profileSemester'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    const map = { profileName:'name', profileSchool:'school', profileDept:'department', profileLevel:'level', profileSemester:'semester' };
+    state.profile[map[id]] = e.target.value;
+    scheduleSave();
+  });
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'gradecompass-backup.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  setStatus('Exported'); setTimeout(()=>setStatus(''),1500);
+});
+document.getElementById('importBtn').addEventListener('click', () => { document.getElementById('importFile').click(); });
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const loaded = JSON.parse(evt.target.result);
+      if (loaded && loaded.courses) {
+        state = Object.assign(defaultState(), loaded);
+        state.affirmationIndex = dayOfYear() % AFFIRMATIONS.length;
+        render(); scheduleSave();
+        setStatus('Imported successfully'); setTimeout(()=>setStatus(''),1500);
+      } else { setStatus('That file does not look like a GradeCompass backup'); setTimeout(()=>setStatus(''),2000); }
+    } catch (err) { setStatus('Could not read that file'); setTimeout(()=>setStatus(''),2000); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('This clears everything (courses, grades, routine, sessions, deadlines) so a new student can start fresh. Continue?')) return;
+  state = defaultState();
+  render(); scheduleSave();
+  setStatus('Reset complete'); setTimeout(()=>setStatus(''),1500);
+});
+
+/* ---------- CLOUD SYNC ---------- */
+const CLOUD_CONFIG_KEY = 'gradecompass-cloud-config';
+let cloudDb = null;
+let cloudSyncCode = null;
+let cloudApp = null;
+
+function loadCloudConfig() {
+  try {
+    const raw = localStorage.getItem(CLOUD_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function saveCloudConfig(cfg) {
+  try { localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cfg)); } catch (e) {}
+}
+function clearCloudConfig() {
+  try { localStorage.removeItem(CLOUD_CONFIG_KEY); } catch (e) {}
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+function parseFirebaseConfigText(text) {
+  // Accept either a bare {...} object or raw "key: value" lines pasted from the Firebase console
+  let cleaned = text.trim();
+  if (!cleaned.startsWith('{')) cleaned = '{' + cleaned.replace(/,\s*$/, '') + '}';
+  // Turn unquoted object keys into valid JSON keys, then parse safely
+  const withQuotedKeys = cleaned.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+  return JSON.parse(withQuotedKeys);
+}
+
+async function connectCloud(config, syncCode, { silent } = {}) {
+  try {
+    if (!window.firebase || !window.firebase.apps || window.firebase.apps.length === 0) {
+      await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+      await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js');
+    }
+    if (!cloudApp) cloudApp = firebase.initializeApp(config);
+    cloudDb = firebase.firestore();
+    cloudSyncCode = syncCode;
+    saveCloudConfig({ config, syncCode });
+    updateCloudStatusUI(true);
+
+    const doc = await cloudDb.collection('gradecompass-users').doc(syncCode).get();
+    if (doc.exists) {
+      const cloudData = doc.data().state;
+      if (cloudData) {
+        const parsed = JSON.parse(cloudData);
+        if (parsed.courses) {
+          state = Object.assign(defaultState(), parsed);
+          state.affirmationIndex = dayOfYear() % AFFIRMATIONS.length;
+          render();
+        }
+      }
+    } else {
+      await cloudDb.collection('gradecompass-users').doc(syncCode).set({ state: JSON.stringify(state), updatedAt: Date.now() });
+    }
+    if (!silent) { setStatus('Connected — synced'); setTimeout(()=>setStatus(''),1800); }
+    return true;
+  } catch (err) {
+    console.error('Cloud connect error:', err);
+    updateCloudStatusUI(false);
+    if (!silent) { setStatus('Could not connect — check your config and sync code'); setTimeout(()=>setStatus(''),2500); }
+    return false;
+  }
+}
+
+function updateCloudStatusUI(connected) {
+  const statusEl = document.getElementById('cloudStatus');
+  const disconnectBtn = document.getElementById('disconnectCloudBtn');
+  if (!statusEl) return;
+  if (connected) {
+    statusEl.textContent = '✅ Connected — syncing as "' + cloudSyncCode + '". Use this same code on other devices.';
+    statusEl.style.color = 'var(--good)';
+    if (disconnectBtn) disconnectBtn.style.display = 'block';
+  } else {
+    statusEl.textContent = 'Not connected — your data is only saved on this device.';
+    statusEl.style.color = 'var(--text-dim)';
+    if (disconnectBtn) disconnectBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('connectCloudBtn').addEventListener('click', async () => {
+  const configText = document.getElementById('firebaseConfigInput').value;
+  const syncCode = document.getElementById('syncCodeInput').value.trim();
+  if (!configText.trim() || !syncCode) { setStatus('Paste your config and pick a sync code first'); setTimeout(()=>setStatus(''),1800); return; }
+  let config;
+  try { config = parseFirebaseConfigText(configText); }
+  catch (e) { setStatus('Could not read that config — check it was pasted fully'); setTimeout(()=>setStatus(''),2200); return; }
+  setStatus('Connecting...');
+  await connectCloud(config, syncCode);
+});
+
+document.getElementById('disconnectCloudBtn').addEventListener('click', () => {
+  clearCloudConfig();
+  cloudDb = null; cloudSyncCode = null;
+  updateCloudStatusUI(false);
+  setStatus('Disconnected — now saving on this device only'); setTimeout(()=>setStatus(''),1800);
+});
+
+/* ---------- SAVE / LOAD ---------- */
+function scheduleSave() { clearTimeout(saveTimer); setStatus('Saving...'); saveTimer = setTimeout(saveState, 500); }
+async function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (cloudDb && cloudSyncCode) {
+      cloudDb.collection('gradecompass-users').doc(cloudSyncCode).set({ state: JSON.stringify(state), updatedAt: Date.now() }).catch(err => console.error('Cloud save failed:', err));
+    }
+    setStatus('Saved'); setTimeout(()=>setStatus(''),1200);
+  } catch (err) { console.error('Save error:', err); setStatus('Could not save — your changes may be lost on reload'); }
+}
+async function loadState() {
+  setStatus('Loading...');
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const loaded = JSON.parse(raw);
+      if (loaded.courses) { state = Object.assign(defaultState(), loaded); }
+      state.affirmationIndex = dayOfYear() % AFFIRMATIONS.length;
+    }
+  } catch (err) { console.log('No saved data yet or load failed:', err); }
+  setStatus(''); render();
+
+  const cloudCfg = loadCloudConfig();
+  if (cloudCfg && cloudCfg.config && cloudCfg.syncCode) {
+    document.getElementById('firebaseConfigInput').value = JSON.stringify(cloudCfg.config, null, 2);
+    document.getElementById('syncCodeInput').value = cloudCfg.syncCode;
+    await connectCloud(cloudCfg.config, cloudCfg.syncCode, { silent: true });
+  }
+}
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+loadState();
+</script>
+</body>
+</html>
